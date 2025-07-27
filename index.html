@@ -5,16 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <title>qrcode encode</title>
-  </head>
-  <body style="margin: 0">
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 10px">
-      <div id="qrcode" style="padding: 10px; background-color: #fff"></div>
-      <input id="input" style="width: 300px; border: 1px solid #000; padding: 10px" type="text" placeholder="your message" />
-    </div>
     <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
+    <script src="https://unpkg.com/qrcode-decoder@0.3.1/dist/index.min.js"></script>
+    <style>
+      body {
+        margin: 0px;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        gap: 14px;
+      }
+      #qrcode {
+        padding: 10px;
+        background-color: #fff;
+        border: 4px dashed transparent;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 300px;
+        height: 300px;
+      }
+      #hover-text {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: black;
+        font-size: 26px;
+        font-weight: bold;
+        z-index: 10;
+        cursor: default;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      #qrcode img {
+        width: auto;
+        max-width: 300px;
+        height: auto;
+        max-height: 300px;
+      }
+      #input {
+        width: 300px;
+        border: 4px solid #aaa;
+        padding: 10px;
+        text-align: center;
+        font-size: x-large;
+      }
+      #qrcode:hover {
+        border-color: #aaa;
+      }
+      #qrcode:hover img {
+        opacity: 0.1;
+      }
+      #qrcode:hover #hover-text {
+        display: block;
+      }
+      #qrcode.drag-over {
+        border-color: #aaa;
+      }
+      #qrcode.drag-over img {
+        opacity: 0.1;
+      }
+      #qrcode.drag-over #hover-text {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="qrcode">
+        <div id="hover-text">Paste / Drag</div>
+      </div>
+      <input id="input" type="text" placeholder="input message" />
+    </div>
     <script type="text/javascript">
-      var qrcode = new QRCode(document.getElementById('qrcode'), {
-        text: '',
+      const qrcodeEle = document.getElementById('qrcode')
+      const inputEle = document.getElementById('input')
+
+      const qrcode = new QRCode(qrcodeEle, {
+        text: 'encode & decode',
         width: 300,
         height: 300,
         colorDark: '#000000',
@@ -22,8 +97,103 @@
         correctLevel: QRCode.CorrectLevel.H,
       })
 
-      document.getElementById('input').addEventListener('input', () => {
-        const input = document.getElementById('input').value
+      // get imageEle after new QRCode() !
+      const imageEle = qrcodeEle.querySelector('img')
+
+      // decode handle: image processing and decoding
+      function processImage(file) {
+        const reader = new FileReader()
+        reader.onload = e => {
+          const image = new Image()
+          image.src = e.target.result
+          image.onload = () => {
+            const qrcodeDecoder = new QrcodeDecoder()
+            qrcodeDecoder
+              .decodeFromImage(image)
+              .then(res => {
+                if (res.data === undefined) inputEle.value = 'no qrcode detected!'
+                else inputEle.value = res.data
+              })
+              .catch(err => {
+                console.log('Failed to decode QR code:', err)
+              })
+            imageEle.src = e.target.result
+          }
+        }
+        reader.readAsDataURL(file)
+      }
+
+      // decode handle: click to upload
+      qrcodeEle.addEventListener('click', () => {
+        const file = document.createElement('input')
+        file.type = 'file'
+        file.accept = 'image/*'
+        file.onchange = e => {
+          const file = e.target.files[0]
+          processImage(file)
+        }
+        file.click()
+      })
+
+      // decode handle: drag and drop
+      qrcodeEle.addEventListener('dragover', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        qrcodeEle.classList.add('drag-over')
+      })
+      qrcodeEle.addEventListener('dragleave', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        qrcodeEle.classList.remove('drag-over')
+      })
+      qrcodeEle.addEventListener('drop', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        qrcodeEle.classList.remove('drag-over')
+        const files = e.dataTransfer.files
+        if (files.length > 0) {
+          const file = files[0]
+          if (file.type.startsWith('image/')) {
+            processImage(file)
+          } else {
+            console.log('Please drop an image file')
+          }
+        }
+      })
+
+      // decode handle: paste
+      document.addEventListener('paste', e => {
+        const items = e.clipboardData.items
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile()
+            const reader = new FileReader()
+            reader.onload = e => {
+              const image = new Image()
+              image.src = e.target.result
+              image.onload = () => {
+                imageEle.src = e.target.result
+                const qrcodeDecoder = new QrcodeDecoder()
+                qrcodeDecoder
+                  .decodeFromImage(image)
+                  .then(res => {
+                    if (res.data === undefined) inputEle.value = 'no qrcode detected!'
+                    else inputEle.value = res.data
+                  })
+                  .catch(err => {
+                    console.log('Failed to decode QR code:', err)
+                  })
+              }
+            }
+            reader.readAsDataURL(blob)
+            break
+          }
+        }
+      })
+
+      // encode handle: type in words
+      inputEle.addEventListener('input', () => {
+        const input = inputEle.value
         qrcode.makeCode(input)
       })
     </script>
