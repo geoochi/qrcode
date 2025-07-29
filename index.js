@@ -2,7 +2,7 @@ const qrcodeEle = document.getElementById('qrcode')
 const inputEle = document.getElementById('input')
 
 const qrcode = new QRCode(qrcodeEle, {
-  text: '',
+  text: 'hello ultraqr.codes !',
   width: 300,
   height: 300,
   colorDark: '#000000',
