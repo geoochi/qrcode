@@ -110,3 +110,8 @@ body {
   color: #40e2c7;
   font-size: larger;
 }
+
+#gotit:hover{
+  cursor: pointer;
+  color: #96eadc;
+}

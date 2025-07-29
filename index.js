@@ -1,5 +1,7 @@
 const qrcodeEle = document.getElementById('qrcode')
 const inputEle = document.getElementById('input')
+const QAEle = document.getElementById('QA')
+const gotitEle = document.getElementById('gotit')
 
 const qrcode = new QRCode(qrcodeEle, {
   text: 'hello ultraqr.codes !',
@@ -108,4 +110,11 @@ document.addEventListener('paste', e => {
 inputEle.addEventListener('input', () => {
   const input = inputEle.value
   qrcode.makeCode(input)
+})
+
+if (localStorage.getItem('gotit')) QAEle.remove()
+
+gotitEle.addEventListener('click', () => {
+  localStorage.setItem('gotit', true)
+  QAEle.remove()
 })
