@@ -22,7 +22,7 @@ self.addEventListener('activate', event => {
 })
 
 self.addEventListener('fetch', event => {
-  if (event.request.url.includes('/api/')) return
+  // if (event.request.url.includes('/api/')) return
 
   const url = new URL(event.request.url)
 
